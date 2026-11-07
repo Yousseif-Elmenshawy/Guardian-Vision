@@ -113,3 +113,63 @@ export function validateNationalID(nationalID) {
     body: { national_id: nationalID },
   });
 }
+
+/**
+ * Excel API client — يجلب بيانات الطلاب والدرجات من ملف Excel عبر خادم Python
+ * جميع الطلبات تمر عبر بروكسي /api/excel في vite.config.js → http://localhost:8000
+ */
+async function excelRequest(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`/api/excel${path}`, {
+    ...options,
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  if (!response.ok) {
+    let message = "حدث خطأ أثناء الاتصال بخادم Excel";
+    try {
+      const payload = await response.json();
+      message = payload.message || payload.error || message;
+    } catch {
+      message = response.statusText || message;
+    }
+    throw new Error(message);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+export function getExcelStudent(nationalID = "12345678901234") {
+  return excelRequest(`/students/me?national_id=${encodeURIComponent(nationalID)}`);
+}
+
+export function getExcelPerformance(studentId = 1, monthId = null) {
+  const query = monthId !== null ? `&month_id=${monthId}` : "";
+  return excelRequest(`/students/me/performance?student_id=${studentId}${query}`);
+}
+
+export function getExcelSubjects(studentId = 1, monthId = 1) {
+  return excelRequest(`/students/me/subjects?student_id=${studentId}&month_id=${monthId}`);
+}
+
+export function getExcelSubjectDetail(subjectId, studentId = 1) {
+  return excelRequest(`/students/me/subjects/${subjectId}?student_id=${studentId}`);
+}
+
+export function getExcelGrades(studentId = 1) {
+  return excelRequest(`/grades?student_id=${studentId}`);
+}

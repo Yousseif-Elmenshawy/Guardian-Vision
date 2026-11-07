@@ -167,9 +167,40 @@ main.go → routes.NewWithSPA()
 
 ---
 
-## ❌ What Was NOT Changed
+## Excel student accounts and database workbook export
 
-- All existing API routes and handlers remain identical
-- No Go module dependencies were added (uses stdlib only)
-- The frontend React code was not modified
-- The existing development workflow with Vite hot-reload still works
+The `Students` sheet does not contain passwords. To enable Excel-only students to
+sign in, install the Python requirements and run the local import command from
+the repository root:
+
+```powershell
+python -m pip install -r python\requirements.txt
+python python\import_excel_students.py
+```
+
+The command asks the administrator to set and confirm a separate password for
+each student not already in MySQL. It imports those students and their Excel
+grades/performance into the database, then refreshes the database worksheets
+and `Report` sheet. It never replaces existing student passwords or overwrites
+scores already stored in MySQL. Passwords are stored as PBKDF2 hashes in MySQL,
+not in Excel. Use `--dry-run` to validate the input without making database
+changes.
+
+To export the current database contents back into the existing workbook:
+
+```powershell
+python python\sync_database_to_excel.py
+```
+
+This refreshes `DB_<table>` worksheets and a per-student `Report` worksheet in
+`python\students_data.xlsx`, while preserving the original `Students`, `Grades`
+and `MonthlyPerformance` sheets. Database values are a one-way snapshot; the
+export excludes `password_hash` and does not write Excel changes back to MySQL.
+Set `GV_DB_DSN` to the same Go MySQL DSN used by the backend when the default
+local database connection is not applicable.
+
+---
+
+The student dashboard reads grades and report data from the authenticated Go
+API. Restart the backend after updating it so the API's empty-month and login
+validation fixes take effect.

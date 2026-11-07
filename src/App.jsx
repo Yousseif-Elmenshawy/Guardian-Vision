@@ -2,6 +2,7 @@ import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Home from './components/Home';
 import Form from './components/Form';
 import Form2 from './components/Form2';
+import Dashboard from './components/Dashboard';
 import About from './components/About';
 import Uniform from './components/unform';
 import Resault from './components/Degrees/Resault2';
@@ -30,6 +31,7 @@ function App() {
       <Nav />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/Form" element={<Form />} />
         <Route path="/Form2" element={<Form2 />} />
         <Route path="/About" element={<About />} />

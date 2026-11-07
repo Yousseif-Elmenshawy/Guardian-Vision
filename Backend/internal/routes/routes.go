@@ -18,10 +18,6 @@ func New(h *handlers.Handlers) http.Handler {
 	mux.HandleFunc("GET /api/health", h.Health.Check)
 	mux.HandleFunc("POST /api/auth/login", h.Auth.Login)
 
-	// Diagnostic endpoints — open in browser to debug issues
-	mux.HandleFunc("GET /api/debug/login-check", h.Auth.LoginDiagnostic)
-	mux.HandleFunc("GET /api/debug/students", h.Student.ListAllStudents)
-
 	// Registration validation endpoint — checks national ID before full registration
 	mux.HandleFunc("POST /api/registration/validate-national-id", h.Registration.ValidateNationalID)
 

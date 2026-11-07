@@ -14,17 +14,6 @@ type StudentHandler struct {
 	store *store.Store
 }
 
-// ListAllStudents returns all students in the database (IDs, national IDs, names, grades).
-// This is useful for debugging — open it in your browser to see what's available.
-func (h *StudentHandler) ListAllStudents(w http.ResponseWriter, r *http.Request) {
-	students, err := h.store.ListAllStudents(r.Context())
-	if err != nil {
-		writeStoreError(w, err)
-		return
-	}
-	httpx.WriteJSON(w, http.StatusOK, students)
-}
-
 func (h *StudentHandler) Me(w http.ResponseWriter, r *http.Request) {
 	studentID, ok := middleware.StudentIDFromContext(r.Context())
 	if !ok {

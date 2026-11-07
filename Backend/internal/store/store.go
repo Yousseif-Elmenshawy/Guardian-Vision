@@ -161,7 +161,7 @@ ORDER BY am.sort_order ASC`
 	}
 	defer rows.Close()
 
-	var items []models.MonthlyPerformance
+	items := make([]models.MonthlyPerformance, 0)
 	for rows.Next() {
 		var item models.MonthlyPerformance
 		if err := rows.Scan(
@@ -186,6 +186,9 @@ func (s *Store) ListStudentSubjects(ctx context.Context, studentID, monthID int6
 	if monthID == 0 {
 		latest, err := s.latestScoreMonth(ctx, studentID)
 		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return []models.StudentSubjectScore{}, nil
+			}
 			return nil, err
 		}
 		monthID = latest
@@ -212,7 +215,7 @@ ORDER BY sub.id ASC`
 	}
 	defer rows.Close()
 
-	var items []models.StudentSubjectScore
+	items := make([]models.StudentSubjectScore, 0)
 	for rows.Next() {
 		item, err := scanSubjectScore(rows)
 		if err != nil {

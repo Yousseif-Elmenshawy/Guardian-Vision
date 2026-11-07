@@ -5,21 +5,13 @@ import PerformanceChart from "./Chart-com";
 import { useEffect, useState } from "react";
 import SubjectsPerformanceChart from "./Chart2-com";
 import { getCurrentStudent, getSavedStudent, getStudentPerformance, getStudentSubjects } from "../../api/client";
+import StudentReport from "./StudentReport";
 
 const months = [
-    {
-        id: 1,
-        name: "يناير",
-    },
-    {
-        id: 2,
-        name: "فبراير",
-    },
-    {
-        id: 3,
-        name: "مارس",
-    }
-]
+    { id: 1, name: "يناير" },
+    { id: 2, name: "فبراير" },
+    { id: 3, name: "مارس" }
+];
 
 const subjectIcons = {
     Calculator: <Calculator size={20} color="white" />,
@@ -39,14 +31,20 @@ const mapSubjectFromApi = (subject) => ({
     id: subject.subject_id,
     name: subject.subject_name_en,
     arabicName: subject.subject_name_ar,
-    progress: Number(subject.score),
+    score: Number(subject.score),
+    maxScore: Number(subject.max_score),
+    progress: Number(subject.max_score) > 0 ? (Number(subject.score) / Number(subject.max_score)) * 100 : 0,
+    month: subject.month_name,
     icon: subjectIcons[subject.icon_name] || <BookOpen size={20} color="white" />,
     colorIcon: subject.color_hex,
     evaluation: subject.evaluation,
+    recommendation: subject.recommendation,
 });
 
 const mapPerformanceFromApi = (item) => ({
+    month_id: item.month_id,
     month: item.month_name,
+    month_name: item.month_name,
     rate: Number(item.general_rate),
     behavior: Number(item.behavior_rate),
     attendance: Number(item.attendance_rate),
@@ -55,46 +53,35 @@ const mapPerformanceFromApi = (item) => ({
 export default function Resault() {
     const location = useLocation();
     const major = location.state?.major || "غير محدد";
-    const majorKey = location.state?.majorKey || "IT";
 
-    const majorSubjectDetails = {
-        "IT": { name: "IT", arabicName: "تكنولوجيا المعلومات", icon: <BookMarked size={20} color="white" />, colorIcon: "#ec4899" },
-        "Communications": { name: "Communications", arabicName: "اتصالات", icon: <Radio size={20} color="white" />, colorIcon: "#ec4899" },
-        "Networking": { name: "Networking", arabicName: "الشبكات", icon: <Wifi size={20} color="white" />, colorIcon: "#ec4899" }
-    };
-    const currentMajorDetails = majorSubjectDetails[majorKey] || majorSubjectDetails["IT"];
 
-    const defaultSubjects = [
-        { id: 1, name:"Math", arabicName: "رياضيات", progress: 85, icon: <Calculator size={20} color="white" />, colorIcon: "#3b82f6", evaluation: "جيد جداً" },
-        { id: 2, name: "English", arabicName: "لغة إنجليزية", progress: 78, icon: <Globe size={20} color="white" />, colorIcon: "#a855f7", evaluation: "جيد جداً" },
-        { id: 3, name: "Arabic", arabicName: "لغة عربية", progress: 88, icon: <BookOpen size={20} color="white" />, colorIcon: "#10b981", evaluation: "جيد جداً" },
-        { id: 4, name: "Physics", arabicName: "فيزياء", progress: 88, icon: <Atom size={20} color="white" />, colorIcon: "#22c55e", evaluation: "جيد جداً" },
-        { id: 5, name: "TCS", arabicName: "مهارات التواصل التقني", progress: 92, icon: <Brain size={20} color="white" />, colorIcon: "#6366f1", evaluation: "ممتاز" },
-        { id: 6, name: "CDC", arabicName: "التوجيه والارشاد وريادة الأعمال", progress: 80, icon: <Network size={20} color="white" />, colorIcon: "#eab308", evaluation: "جيد جداً" },
-        { id: 7, name: currentMajorDetails.name, arabicName: currentMajorDetails.arabicName, progress: 90, icon: currentMajorDetails.icon, colorIcon: currentMajorDetails.colorIcon, evaluation: "ممتاز" },
-        { id: 8, name: "Capstone", arabicName: "مشروع التخرج", progress: 98, icon: <Award size={20} color="white" />, colorIcon: "#14b8a6", evaluation: "ممتاز" },
-        { id: 9, name: "Social studies", arabicName: "دراسات اجتماعية", progress: 85, icon: <Users size={20} color="white" />, colorIcon: "#f97316", evaluation: "جيد جداً" }
-    ];
+
+
+
+
 
     const [selectedMonth, setSelectedMonth] = useState(null);
     const [student, setStudent] = useState(getSavedStudent());
-    const [subjects, setSubjects] = useState(defaultSubjects);
+    const [subjects, setSubjects] = useState([]);
+    const [subjectHistory, setSubjectHistory] = useState([]);
     const [performanceData, setPerformanceData] = useState([]);
     const [apiError, setApiError] = useState("");
 
     useEffect(() => {
         const loadDashboard = async () => {
             try {
-                const [studentData, performance, subjectScores] = await Promise.all([
+                const [studentData, performance, subjectScores, history] = await Promise.all([
                     getCurrentStudent(),
                     getStudentPerformance(),
                     getStudentSubjects(),
+                    Promise.all(months.map((month) => getStudentSubjects(month.id))),
                 ]);
                 setStudent(studentData);
-                setPerformanceData(performance.map(mapPerformanceFromApi));
-                if (subjectScores.length) {
-                    setSubjects(subjectScores.map(mapSubjectFromApi));
-                }
+                setPerformanceData((performance || []).map(mapPerformanceFromApi));
+                setSubjects((subjectScores || []).map(mapSubjectFromApi));
+                setSubjectHistory(
+                    history.flatMap((monthScores) => monthScores || []).map(mapSubjectFromApi)
+                );
                 setApiError("");
             } catch (error) {
                 setApiError(error.message);
@@ -108,9 +95,7 @@ export default function Resault() {
         setSelectedMonth(month);
         try {
             const subjectScores = await getStudentSubjects(month);
-            if (subjectScores.length) {
-                setSubjects(subjectScores.map(mapSubjectFromApi));
-            }
+            setSubjects((subjectScores || []).map(mapSubjectFromApi));
             setApiError("");
         } catch (error) {
             setApiError(error.message);
@@ -132,6 +117,7 @@ export default function Resault() {
                 </div>
                 {apiError && <p style={{ color: "red", textAlign: "center" }}>{apiError}</p>}
                 <p className="description">متابعه شامله لي مستوى الطالب الاكاديمى</p>
+                <StudentReport performance={performanceData} subjects={subjects} monthId={selectedMonth} />
                 <div className="month">
                     <p className="month-title"><Calendar size={24} /> اختيار الشهر:</p>
                     {months.map((month) => (
@@ -142,7 +128,7 @@ export default function Resault() {
                 </div>
                 <PerformanceChart data={performanceData} />
                 <br />
-                <SubjectsPerformanceChart />
+                <SubjectsPerformanceChart data={subjectHistory} />
                 <div className="subjects">
                     <div className="subjects-title" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '10px' }}>
                         <BookOpen size={28} />
@@ -163,10 +149,12 @@ export default function Resault() {
                                 <div className="card-body">
                                     <div className="score-text">
                                         <span>الدرجة</span>
-                                        <span className="score">{subject.progress}/100</span>
+                                        <span className="score">{subject.score}/{subject.maxScore}</span>
                                     </div>
                                     <div className="progress-container">
-                                        <div className="progress-bar" style={{ width: `${subject.progress}%` }}></div>
+                                        <div className="progress-bar">
+                                            <div className="progress-fill" style={{ width: `${subject.progress}%` }}></div>
+                                        </div>
                                     </div>
                                     <p className="evaluation">{subject.evaluation}</p>
                                 </div>

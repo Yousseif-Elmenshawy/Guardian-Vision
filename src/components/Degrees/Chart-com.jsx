@@ -9,14 +9,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// 1. بيانات تجريبية مشابهة للصورة
-// يمكنك استبدالها ببيانات حقيقية من الـ API
-const defaultPerformanceData = [
-  { month: 'يناير', rate: 75, behavior: 70, attendance: 90 },
-  { month: 'فبراير', rate: 78, behavior: 75, attendance: 92 },
-  { month: 'مارس', rate: 82, behavior: 80, attendance: 95 },
-];
-
 // 2. تخصيص الـ Tooltip ليظهر باللغة العربية عند الوقوف على النقطة
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -33,8 +25,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // 3. الـ Component الرئيسي
-const PerformanceChart = ({ data = defaultPerformanceData }) => {
-  const performanceData = data.length ? data : defaultPerformanceData;
+const PerformanceChart = ({ data = [] }) => {
+  const performanceData = data;
 
   return (
     // حاوية خارجية بستايل مشابه للصورة (أبيض بظل خفيف وزوايا دائرية)
@@ -49,7 +41,9 @@ const PerformanceChart = ({ data = defaultPerformanceData }) => {
       </div>
       <p style={{ color: '#666', marginBottom: '30px', fontSize: '1rem' }}>المؤشرات العامة</p>
 
-      {/* حاوية لجعل الـ Chart متجاوباً */}
+      {!performanceData.length ? (
+        <p>لا توجد بيانات أداء مسجلة لهذا الطالب.</p>
+      ) : (
       <ResponsiveContainer width="100%" height={400}>
         <AreaChart
           data={performanceData}
@@ -98,8 +92,25 @@ const PerformanceChart = ({ data = defaultPerformanceData }) => {
             fill="url(#colorRate)" // استخدام التدرج اللوني الذي عرفناه في defs
             activeDot={{ r: 6, stroke: '#fff', strokeWidth: 3, fill: '#4184F3' }} // شكل النقطة عند التفاعل
           />
+          <Area
+            type="monotone"
+            dataKey="behavior"
+            stroke="#38A169"
+            strokeWidth={2}
+            fill="#38A169"
+            fillOpacity={0.08}
+          />
+          <Area
+            type="monotone"
+            dataKey="attendance"
+            stroke="#3182CE"
+            strokeWidth={2}
+            fill="#3182CE"
+            fillOpacity={0.08}
+          />
         </AreaChart>
       </ResponsiveContainer>
+      )}
 
       {/* الـ Legend في الأسفل */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '30px', fontSize: '0.9rem', color: '#666' }}>
